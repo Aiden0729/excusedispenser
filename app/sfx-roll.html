@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>구르기 소리 — A/B/C 비교</title>
+<style>
+  body {
+    margin: 0; padding: 34px 20px 80px;
+    background: #221913; color: #f8f1e5;
+    font-family: 'Malgun Gothic', -apple-system, sans-serif;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 21px; margin: 0 0 8px; }
+  h2 { font-size: 15px; color: #ee6249; margin: 34px 0 8px; }
+  .note { font-size: 12.5px; color: #a8968a; margin: 0 0 16px; line-height: 1.75; }
+  b { color: #d99312; font-weight: 700; }
+  code { color: #f8f1e5; }
+
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .play {
+    appearance: none; border: none; cursor: pointer; font-family: inherit;
+    background: #d8402c; color: #fff; border-radius: 12px;
+    padding: 13px 20px; font-size: 15px; font-weight: 700;
+  }
+  .play:active { background: #a72e1e; }
+  .play--ghost { background: rgba(255,255,255,0.09); color: #f8f1e5; }
+  select {
+    font-family: inherit; font-size: 14px; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid #4a352c; background: #130d0a; color: #f8f1e5;
+  }
+
+  .timeline {
+    position: relative; height: 92px; margin: 18px 0 6px;
+    background: #130d0a; border-radius: 12px; overflow: hidden;
+  }
+  .seg {
+    position: absolute; top: 0; bottom: 26px;
+    border-left: 1px solid rgba(255,255,255,0.13);
+    padding: 9px 0 0 8px; box-sizing: border-box;
+    font-size: 11px; color: #a8968a; line-height: 1.5;
+  }
+  .seg--focus { background: rgba(217,147,18,0.12); }
+  .seg em { display: block; font-style: normal; color: #f8f1e5; font-weight: 700; font-size: 12px; }
+  .head { position: absolute; top: 0; bottom: 26px; width: 2px; background: #d99312; left: 0; opacity: 0; }
+  .ruler { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; border-top: 1px solid rgba(255,255,255,0.13); }
+  .tick { position: absolute; top: 5px; font-size: 10.5px; color: #6f5d57; transform: translateX(-50%); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .card {
+    background: #130d0a; border: 1px solid #3a2a22; border-radius: 14px; padding: 16px;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 14px; color: #f8f1e5; }
+  .card p { margin: 0 0 14px; font-size: 12.5px; color: #a8968a; line-height: 1.7; }
+  .card .lvl { font-family: Consolas, monospace; font-size: 11.5px; color: #6f5d57; }
+  .mini {
+    appearance: none; border: 1px solid #4a352c; background: transparent; color: #f8f1e5;
+    border-radius: 9px; padding: 9px 16px; font-family: inherit; font-size: 13px; cursor: pointer;
+    width: 100%;
+  }
+  .mini:active { background: #d8402c; border-color: #d8402c; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>구르기 소리 — 어느 쪽인가</h1>
+  <p class="note">
+    「roll이 잘 안 어울린다」는 피드백을 받아 다시 만들었다.
+    <b>혼자 들어서 고르지 마라.</b> 문제는 이 소리 하나가 아니라
+    낙하음과 공개음 사이에 끼었을 때의 어울림이다 — 아래 「전체 재생」으로 바꿔 들어봐라.
+  </p>
+
+  <h2>1. 연출 전체에 넣고 들어보기</h2>
+  <div class="row">
+    <button class="play" id="run">▶ 전체 재생</button>
+    <select id="rollpick">
+      <option value="variants/roll-a-current">구르기 A · 기존</option>
+      <option value="variants/roll-b-grain" selected>구르기 B · 촘촘하고 밝게</option>
+      <option value="variants/roll-c-soft">구르기 C · 성기고 둔하게</option>
+    </select>
+    <select id="rarity">
+      <option value="reveal-common">일반</option>
+      <option value="reveal-rare">희귀</option>
+      <option value="reveal-epic" selected>영웅</option>
+      <option value="reveal-legendary">전설</option>
+      <option value="miss">꽝</option>
+    </select>
+    <button class="play play--ghost" id="stop">■ 정지</button>
+  </div>
+
+  <div class="timeline" id="tl">
+    <div class="head" id="head"></div>
+    <div class="ruler" id="ruler"></div>
+  </div>
+
+  <h2>2. 구르기만 따로</h2>
+  <div class="cards" id="cards"></div>
+
+  <h2>3. 무엇을 고쳤나</h2>
+  <p class="note">
+    <b>A(기존)</b>는 연속된 노이즈에 26Hz 고정 트레몰로를 얹은 것이었다.
+    자갈 위를 구르는 무거운 공에는 맞지만 가벼운 플라스틱 캡슐이 아니다.
+    고정 LFO는 신디사이저 티가 나고, 속도가 구간마다 계단식으로 뚝 바뀌어
+    기어를 바꾸는 것처럼 들렸다.<br><br>
+    <b>B·C</b>는 세 가지를 바꿨다.<br>
+    ① 연속음을 버리고 <b>잘게 튀는 타격</b>을 뿌린 뒤 그 «밀도»를 속도에 맞췄다.
+    간격에 흔들림을 줘서 주기가 음정으로 들리지 않게 했다.<br>
+    ② 속도를 키프레임 사이 <b>smoothstep으로 이어 미분</b>했다. CSS도 구간마다
+    완급이 붙으므로 이쪽이 화면 움직임과 맞는다.<br>
+    ③ 방향이 바뀌는 다섯 지점에 트레이 벽을 치는 «톡»과 <b>빈 껍질의 울림</b>을 얹었다.
+  </p>
+  <p class="note">
+    고르고 나면 <code>scripts/make-sfx.mjs</code>의 <code>DEFAULT_ROLL</code>만 바꾸고
+    <code>public/sfx/variants/</code>와 이 페이지를 지운다.
+    현재 <code>public/sfx/roll.mp3</code>에는 <b>B</b>가 들어가 있다.
+    바꿔 넣으려면 앱을 다시 배포해야 한다.
+  </p>
+</div>
+
+<script>
+  // Machine.tsx의 연출 상수와 같은 값.
+  const SHAKE_MS = 550, DROP_MS = 1060, ROLL_MS = 1760, REVEAL_MS = 2410;
+  const TOTAL = 3700;
+
+  const CUES = [
+    ['lever',  0,        '레버',       '걸쇠가 철컥 걸리고 모터가 돈다', false],
+    ['drop',   SHAKE_MS, '낙하와 충돌', '204ms에 바닥을 치고 네 번 튕긴다', false],
+    ['roll',   DROP_MS,  '구르기',     '지금 비교하는 구간', true],
+    ['open',   ROLL_MS,  '캡슐 갈라짐', '떨림 2회 → 280ms에 딱 → 껍질 두 쪽', false],
+    ['reveal', REVEAL_MS,'결과 공개',  '등급이 오를수록 길어지고 커진다', false],
+  ];
+
+  const cache = {};
+  const load = (name) => (cache[name] ||= new Audio(`./sfx/${name}.mp3`));
+  ['lever','shake','drop','open','miss','reveal-common','reveal-rare','reveal-epic',
+   'reveal-legendary','variants/roll-a-current','variants/roll-b-grain',
+   'variants/roll-c-soft'].forEach(load);
+
+  function fire(name) {
+    const node = load(name).cloneNode();
+    node.play().catch(() => {});
+    return node;
+  }
+
+  // 타임라인
+  const tl = document.getElementById('tl');
+  const pct = (ms) => (ms / TOTAL) * 100;
+  CUES.forEach(([name, at, label, desc, focus], i) => {
+    const el = document.createElement('div');
+    el.className = 'seg' + (focus ? ' seg--focus' : '');
+    el.style.left = pct(at) + '%';
+    const next = CUES[i + 1];
+    el.style.width = (pct(next ? next[1] : TOTAL) - pct(at)) + '%';
+    el.innerHTML = `<em>${label}</em>${desc}`;
+    tl.appendChild(el);
+  });
+  const ruler = document.getElementById('ruler');
+  [0, 550, 1060, 1760, 2410, 3000].forEach(ms => {
+    const t = document.createElement('span');
+    t.className = 'tick';
+    t.style.left = pct(ms) + '%';
+    t.textContent = ms + 'ms';
+    ruler.appendChild(t);
+  });
+
+  // 재생
+  const head = document.getElementById('head');
+  let timers = [], raf = 0, playing = [];
+
+  function stop() {
+    timers.forEach(clearTimeout); timers = [];
+    cancelAnimationFrame(raf);
+    playing.forEach(n => { n.pause(); n.currentTime = 0; });
+    playing = [];
+    head.style.opacity = 0;
+  }
+  document.getElementById('stop').onclick = stop;
+
+  document.getElementById('run').onclick = () => {
+    stop();
+    const plan = [
+      [0, 'lever'], [0, 'shake'], [SHAKE_MS, 'drop'],
+      [DROP_MS, document.getElementById('rollpick').value],
+      [ROLL_MS, 'open'],
+      [REVEAL_MS, document.getElementById('rarity').value],
+    ];
+    for (const [at, name] of plan) {
+      timers.push(setTimeout(() => playing.push(fire(name)), at));
+    }
+    const started = performance.now();
+    head.style.opacity = 1;
+    (function tick() {
+      const t = performance.now() - started;
+      head.style.left = Math.min(100, pct(t)) + '%';
+      if (t < TOTAL) raf = requestAnimationFrame(tick); else head.style.opacity = 0;
+    })();
+  };
+
+  // 개별 카드
+  const CARDS = [
+    ['variants/roll-a-current', 'A · 기존', '연속 노이즈 + 고정 트레몰로. 바람에 가깝다.', '평균 -20.4dB'],
+    ['variants/roll-b-grain', 'B · 촘촘하고 밝게', '알갱이가 빽빽하다. 확실히 「구르르륵」 하고 들린다.', '평균 -26.8dB'],
+    ['variants/roll-c-soft', 'C · 성기고 둔하게', '알갱이가 성기고 어둡다. 배경으로 물러나 앉는다.', '평균 -29.4dB'],
+  ];
+  document.getElementById('cards').innerHTML = CARDS.map(([f, title, desc, lvl]) => `
+    <div class="card">
+      <h3>${title}</h3>
+      <p>${desc}<br><span class="lvl">${lvl}</span></p>
+      <button class="mini" data-sfx="${f}">▶ 들어보기</button>
+    </div>`).join('');
+  document.getElementById('cards').onclick = (e) => {
+    const name = e.target.dataset?.sfx;
+    if (name) fire(name);
+  };
+</script>
+</body>
+</html>
